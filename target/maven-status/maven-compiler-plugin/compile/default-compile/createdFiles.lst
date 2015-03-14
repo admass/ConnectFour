@@ -1,6 +1,0 @@
-com/lukzar/service/HeuristicService.class
-com/lukzar/controller/HeuristicController.class
-com/lukzar/config/Application.class
-com/lukzar/service/impl/RandomHeuristic.class
-com/lukzar/service/impl/SecondHeuristic.class
-com/lukzar/service/HeuristicFactory.class

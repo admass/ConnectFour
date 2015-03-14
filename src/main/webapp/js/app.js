@@ -1,14 +1,14 @@
-var app = angular.module('selectFour', ['ngRoute']);
+/* global angular */
 
+var app = angular.module('connectFour', ['ngRoute']);
 app.config(['$routeProvider', function ($routeProvider) {
         $routeProvider.otherwise({
             redirectTo: '/home',
-            controller: 'SelectFourCtrl'
+            controller: 'ConnectFourCtrl'
         });
     }]);
+app.controller('ConnectFourCtrl', function ($scope, $http) {
 
-app.controller('SelectFourCtrl', function ($scope, $http) {
-    
     var emptyBoard =
             [[0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0],
@@ -17,62 +17,116 @@ app.controller('SelectFourCtrl', function ($scope, $http) {
                 [0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0]];
 
-    $scope.player = 1;
+    $scope.players = [
+        {
+            id: 1,
+            isBot: false,
+            wonGames: 0
+        },
+        {
+            id: 2,
+            isBot: false,
+            wonGames: 0
+        }];
 
+    $scope.tieGames = 0;
+    $scope.whoWon = 0;
+    $scope.currentPlayer = 1;
     $scope.data = copy(emptyBoard);
-    $scope.won = false;
+    $scope.finished = false;
+    $scope.moveValues = [0, 0, 0, 0, 0, 0, 0];
 
     var nextPlayer = function () {
-        $scope.player = ($scope.player % 2) + 1;
+        $scope.currentPlayer = $scope.currentPlayer % 2 + 1;
     };
 
     $scope.resetBoard = function () {
-        $scope.player = 1;
+        $scope.currentPlayer = 1;
         $scope.data = copy(emptyBoard);
+        $scope.finished = false;
+        if ($scope.players[0].isBot) {
+            makeMoveBot();
+        }
+    };
+
+    $scope.pushBot = function () {
+        if (isBot($scope.currentPlayer))
+            makeMoveBot();
     };
 
     $scope.makeMove = function (column) {
-        getMove();
-        if ($scope.data[0][column] === 0 && !$scope.won) {
-            for (var i = $scope.data.length - 1; i >= 0; i--) {
-                if ($scope.data[i][column] === 0) {
-                    $scope.data[i][column] = $scope.player;
-                    if (checkIfWin(i, column)) {
-                        $scope.won = true;
-                        break;
-                    }
-                    nextPlayer();
-                    break;
-                }
+        if (isMoveValid(column)) {
+            var row = getFirstFreeRowInColumn(column);
+            $scope.data[row][column] = $scope.currentPlayer;
+            checkIfWin();
+            nextPlayer();
+            if (isBot($scope.currentPlayer)) {
+                makeMoveBot();
+            } else {
+                getMoveValues();
             }
         }
     };
-    
-    function getMove() {
-    $http.post('http://localhost:8080/heuristic/postMove/1/random', $scope.data).
-        success(function(data) {
-            console.log(data);
-        });
-}
 
-    function checkIfWin(row, column) {
-        return ((sumTop(row, column) + sumBottom(row, column)) >= 3) ||
-                ((sumLeft(row, column) + sumRight(row, column)) >= 3) ||
-                ((sumTopLeft(row, column) + sumBottomRight(row, column)) >= 3) ||
-                ((sumTopRight(row, column) + sumBottomLeft(row, column)) >= 3);
+    function checkIfWin() {
+        var victory = hasVictory();
+        if (victory === -1) {
+            $scope.tieGames++;
+            $scope.finished = true;
+            $scope.whoWon = -1;
+        } else if (victory === 1) {
+            $scope.players[0].wonGames++;
+            $scope.finished = true;
+            $scope.whoWon = 1;
+        } else if (victory === 2) {
+            $scope.players[1].wonGames++;
+            $scope.finished = true;
+            $scope.whoWon = 2;
+        }
+        if (isBot(2) && isBot(1) && $scope.finished) {
+            $scope.resetBoard();
+            makeMoveBot();
+        }
     }
 
-    function isOwner(row, column) {
-        return $scope.data[row][column] === $scope.player;
+    function isMoveValid(column) {
+        return $scope.data[0][column] === 0 && !$scope.finished;
     }
 
+    function getFirstFreeRowInColumn(column) {
+        for (var i = $scope.data.length - 1; i >= 0; i--) {
+            if ($scope.data[i][column] === 0) {
+                return i;
+            }
+        }
+    }
+
+    function isBot(player) {
+        return $scope.players[player - 1].isBot;
+    }
+
+    function makeMoveBot() {
+        $http.post('http://localhost:8080/heuristic/postMove/'
+                + $scope.currentPlayer , $scope.data).
+                success(function (data) {
+                    setTimeout($scope.makeMove(data.move),100);
+                });
+    }
+
+    function getMoveValues() {
+        $http.post('http://localhost:8080/heuristic/postMove/'
+                + $scope.currentPlayer, $scope.data).
+                success(function (data) {
+                    $scope.moveValues = data.moveValues;
+                });
+    }
 
     function rows() {
         return $scope.data.length;
     }
 
 
-    function cols() {
+    function columns() {
         return $scope.data[0].length;
     }
 
@@ -85,100 +139,67 @@ app.controller('SelectFourCtrl', function ($scope, $http) {
         return new_arr;
     }
 
-    function sumTop(row, column) {
-        var sum = 0;
-        for (var i = row - 1; i >= 0; i--) {
-            if (isOwner(i, column)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
-        }
-        return sum;
+    function valueAt(row, column) {
+        if (row < 0 || row >= rows() || column < 0 || column >= columns())
+            return 0;
+        return $scope.data[row][column];
     }
 
+    function sum(fromRow, fromCol, rowDir, colDir, player) {
 
-    function sumBottom(row, column) {
-        var sum = 0;
-        for (var i = row + 1; i < rows(); i++) {
-            if (isOwner(i, column)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
+        var result = 0;
+        var i = fromRow, j = fromCol;
+        while (valueAt(i, j) === player) {
+            i += rowDir;
+            j += colDir;
+            result += 1;
         }
-        return sum;
+        return result;
     }
 
-    function sumLeft(row, column) {
-        var sum = 0;
-        for (var i = column - 1; i >= 0; i--) {
-            if (isOwner(row, i)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
+    function isTie() {
+        for (var i = 0; i < columns(); i++) {
+            if (valueAt(0, i) === 0)
+                return false;
         }
-        return sum;
+        return true;
     }
 
-    function sumRight(row, column) {
-        var sum = 0;
-        for (var i = column + 1; i < cols(); i++) {
-            if (isOwner(row, i)) {
-                sum = sum + 1;
-            } else {
-                break;
+    function hasVictory() {
+        for (var i = 0; i < rows(); i++) {
+            for (var j = 0; j < columns(); j++) {
+                if (isVictoryField(i, j)) {
+                    return valueAt(i, j);
+                }
             }
         }
-        return sum;
+        if (isTie())
+            return -1;
+        return 0;
     }
 
-    function sumTopLeft(row, column) {
-        var sum = 0, i, j;
-        for (i = row - 1, j = column - 1; i >= 0 && j >= 0; i--, j--) {
-            if (isOwner(i, j)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
-        }
-        return sum;
+    function isVictoryField(row, column) {
+        var playerAt = valueAt(row, column);
+        return (playerAt !== 0) && (sumHorizontal(row, column, playerAt) >= 3
+                || sumVertical(row, column, playerAt) >=  3
+                || sumLeftTop(row, column, playerAt) >=  3
+                || sumRightTop(row, column, playerAt) >=  3);
     }
 
-    function sumTopRight(row, column) {
-        var sum = 0, i, j;
-        for (i = row - 1, j = column + 1; i >= 0 && j < cols(); i--, j++) {
-            if (isOwner(i, j)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
-        }
-        return sum;
+    function sumRightTop(row, column, player) {
+        return sum(row - 1, column + 1, -1, 1, player) + sum(row + 1, column - 1, 1, -1, player);
     }
 
-    function sumBottomLeft(row, column) {
-        var sum = 0, i, j;
-        for (i = row + 1, j = column - 1; i < rows() && j >= 0; i++, j--) {
-            if (isOwner(i, j)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
-        }
-        return sum;
+    function sumLeftTop(row, column, player) {
+        return sum(row - 1, column - 1, -1, -1, player) + sum(row + 1, column + 1, 1, 1, player);
     }
 
-    function sumBottomRight(row, column) {
-        var sum = 0, i, j;
-        for (i = row + 1, j = column + 1; i < rows() && j < cols(); i++, j++) {
-            if (isOwner(i, j)) {
-                sum = sum + 1;
-            } else {
-                break;
-            }
-        }
-        return sum;
+    function sumVertical(row, column, player) {
+        return sum(row - 1, column, -1, 0, player) + sum(row + 1, column, 1, 0, player);
     }
+
+    function sumHorizontal(row, column, player) {
+        return sum(row, column + 1, 0, 1, player) + sum(row, column - 1, 0, -1, player);
+    }
+
 });

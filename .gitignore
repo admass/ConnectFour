@@ -1,0 +1,12 @@
+target
+.settings
+.project
+.classpath
+*.db
+dependency-reduced-pom.xml
+bin
+*~
+*tlog
+code/web/nb-configuration.xml
+code/nb-configuration.xml
+code/web/nbactions.xml

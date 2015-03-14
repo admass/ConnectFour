@@ -1,16 +1,62 @@
 <!DOCTYPE html>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
-<html>
+<html >
     <head>
-        <title>TODO supply a title</title>
+        <title>Connect Four</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <script src="js/lib/angular.min.js"></script>
+        <script src="js/lib/angular-route.min.js"></script>
+        <script src="js/lib/angular-resource.min.js"></script>
+        <script src="js/lib/angular-locale_pl-pl.js"></script>
+        <script src="js/lib/ui-bootstrap-tpls-0.12.0.min.js"></script>
+        <script src="js/lib/angular-file-upload.min.js"></script>
+        <script src="js/lib/spin.min.js"></script>
+        <script src="js/lib/ng-table.min.js"></script>
+        <script src="js/app.js"></script>
+        <link href="style.css" rel="stylesheet">
     </head>
-    <body>
-        <div>index</div>
+    <body ng-app="connectFour">
+        <div ng-controller="ConnectFourCtrl">
+            <div id="table-wrapper" >
+                <table>
+                    <tr class="row" ng-repeat="row in data">
+                        <td class="column" ng-repeat="cell in row track by $index" ng-click="makeMove($index)">
+                            <b class="player-{{data[$parent.$index][$index]}} ball"></b>
+                        </td>
+                    </tr>
+                    <tr ng-show="showMoves">
+                        <td ng-repeat="value in moveValues track by $index" style="text-align: center">
+                            {{moveValues[$index]}}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div id="menu">
+                <div><input type="button" value="RESET" ng-click="resetBoard()"/></div>
+                <div>Pokaż wartości ruchów: <input type="checkbox" ng-model="showMoves"/></div>
+                <div><input type="button" value="pchnij bota" ng-click="pushBot()"/></div>
+                <div>Ruch gracza: {{currentPlayer}}</div>
+                <div ng-show="finished">
+                    <span ng-show="whoWon === -1">Remis!!</span>
+                    <span ng-show="whoWon > 0">Wygrana gracza: {{whoWon}}!</span>
+                </div>
+                <div class="player-1">
+                    <div> Gracz 1: </div>
+                    <span>Gra komputer: </span><input type="checkbox" ng-model="players[0].isBot"/>
+                    <span>Wygranych: {{players[0].wonGames}}</span>
+                </div>
+                <div class="player-2">
+                    <div> Gracz 2: </div>
+                    <span>Gra komputer: </span>
+                    <input type="checkbox" ng-model="players[1].isBot"/>
+                    <span>Wygranych: {{players[1].wonGames}}</span>
+                </div>
+                <div>
+                    <span>Remisów: {{tieGames}}</span>
+                </div>
+
+            </div>
+        </div>
     </body>
 </html>
