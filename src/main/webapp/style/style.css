@@ -1,0 +1,40 @@
+.row {
+    border: 1px #999999 dotted;
+}
+
+.column {
+    border: 1px #999999 dotted;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+.ball {
+      margin: 3px;
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(255, 255, 255, 0.4) inset, 0 -15px 0 rgba(255, 255, 255, 0.05) inset;
+    display: inline-block;
+  vertical-align: middle;
+  border: .2em solid rgba(0,0,0,0.15);
+  border-radius: 25px;
+  cursor: pointer;
+  position: relative;
+}
+
+.player-1 {
+    background-color: red;
+}
+
+.player-2 {
+    background-color: blue;
+}
+
+#menu {
+    margin-left: 20%;
+    margin-top: 50px;
+}
+
+#table-wrapper table {
+    margin-left: 20%;
+}
