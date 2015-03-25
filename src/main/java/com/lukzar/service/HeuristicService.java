@@ -30,8 +30,8 @@ public class HeuristicService {
         }
         int score;
         score = (playerMoves[3] - opponentMoves[3]) * 50;
-        score = score + ((playerMoves[2] - opponentMoves[2]) * 30);
-        score = score + ((playerMoves[1] - opponentMoves[1]) * 10);
+        score = score + ((playerMoves[2] - opponentMoves[2]) * 15);
+        score = score + ((playerMoves[1] - opponentMoves[1]) * 5);
         score = score / 2;
         score = score < -99 ? -99 : score;
         score = score > 99 ? 99 : score;
